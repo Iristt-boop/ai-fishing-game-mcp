@@ -1,12 +1,10 @@
 """HTTP MCP Server — 钓鱼游戏部署到 Render"""
 import os
 import sys
+import json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import engine
 
-from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.routing import Route
 import uvicorn
 from mcp.server.fastmcp import FastMCP
 
@@ -71,18 +69,17 @@ def play_fishing(
     }))
 
 
-async def health(request):
-    return JSONResponse({"status": "ok", "game": "ai-fishing-game"})
-
-
-from starlette.routing import Mount
-
 mcp_app = mcp.sse_app()
 
-app = Starlette(routes=[
-    Route("/health", health, methods=["GET"]),
-    Mount("/", app=mcp_app),
-])
+
+# ASGI app: health check short-circuits, everything else → MCP
+async def app(scope, receive, send):
+    if scope["type"] == "http" and scope["path"] == "/health":
+        body = json.dumps({"status": "ok", "game": "ai-fishing-game"}).encode()
+        await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json")]})
+        await send({"type": "http.response.body", "body": body})
+    else:
+        await mcp_app(scope, receive, send)
 
 
 if __name__ == "__main__":
