@@ -40,16 +40,16 @@ def build_cmd(action, args):
 @mcp.tool()
 def play_fishing(
     action: str,
-    choice: int = None,
-    bait_id: str = None,
-    times: int = None,
-    stop_on: list = None,
-    qty: int = None,
-    target: str = None,
-    location_id: str = None,
-    chest_uid: str = None,
-    id: str = None,
-    steps: list = None,
+    choice: int | None = None,
+    bait_id: str | None = None,
+    times: int | None = None,
+    stop_on: list[str] | None = None,
+    qty: int | None = None,
+    target: str | None = None,
+    location_id: str | None = None,
+    chest_uid: str | None = None,
+    lookup_id: str | None = None,
+    steps: list[dict] | None = None,
 ) -> str:
     """文字钓鱼游戏。action: status/shop/buy/cast/dive/choose/surface/goto/inventory/sell/open/encyclopedia/look/batch"""
     if action == "batch" and steps:
@@ -60,7 +60,7 @@ def play_fishing(
     return engine.cmd(build_cmd(action, {
         "choice": choice, "bait_id": bait_id, "times": times,
         "stop_on": stop_on, "qty": qty, "target": target,
-        "location_id": location_id, "chest_uid": chest_uid, "id": id,
+        "location_id": location_id, "chest_uid": chest_uid, "id": lookup_id,
     }))
 
 
