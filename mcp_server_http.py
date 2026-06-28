@@ -4,6 +4,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import engine
 
+from starlette.applications import Starlette
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Route
+import uvicorn
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("ai-fishing-game")
@@ -66,6 +70,24 @@ def play_fishing(
     }))
 
 
+# 健康检查
+async def health(request):
+    return JSONResponse({"status": "ok", "game": "ai-fishing-game"})
+
+
+# 组合 Starlette: MCP SSE + 健康检查
+mcp_app = mcp.sse_app()
+
+async def sse_handler(request):
+    return await mcp_app(request.scope, request.receive, request._send)
+
+
+app = Starlette(routes=[
+    Route("/health", health, methods=["GET"]),
+    Route("/sse", sse_handler, methods=["GET", "POST"]),
+])
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3002))
-    mcp.run(transport="sse", host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)

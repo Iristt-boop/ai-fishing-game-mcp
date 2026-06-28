@@ -6,7 +6,7 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python mcp_server_http.py
-    healthCheckPath: /sse
+    healthCheckPath: /health
     envVars:
       - key: PYTHONUTF8
         value: "1"
