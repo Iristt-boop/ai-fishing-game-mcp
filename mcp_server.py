@@ -1,46 +1,12 @@
-"""MCP Server — 让 Claude Desktop 玩钓鱼游戏"""
+"""MCP Server — Claude Code / Claude Desktop 玩钓鱼游戏（stdio）"""
 import sys
 import os
-import json
-
-# 确保能找到 engine
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import engine
 
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
+from mcp.server.fastmcp import FastMCP
 
-server = Server("ai-fishing-game")
-
-
-@server.tool()
-def play_fishing(
-    action: str,
-    choice: int = None,
-    bait_id: str = None,
-    times: int = None,
-    stop_on: list = None,
-    qty: int = None,
-    target: str = None,
-    location_id: str = None,
-    chest_uid: str = None,
-    id: str = None,
-    steps: list = None,
-) -> str:
-    """文字钓鱼游戏。action: status/shop/buy/cast/dive/choose/surface/goto/inventory/sell/open/encyclopedia/look/batch"""
-
-    if action == "batch" and steps:
-        parts = []
-        for step in steps:
-            parts.append(build_cmd(step.get("action", ""), step))
-        return engine.cmd("; ".join(parts))
-
-    cmd_str = build_cmd(action, {
-        "choice": choice, "bait_id": bait_id, "times": times,
-        "stop_on": stop_on, "qty": qty, "target": target,
-        "location_id": location_id, "chest_uid": chest_uid, "id": id,
-    })
-    return engine.cmd(cmd_str)
+mcp = FastMCP("ai-fishing-game")
 
 
 def build_cmd(action, args):
@@ -54,7 +20,6 @@ def build_cmd(action, args):
         if args.get("stop_on") and isinstance(args["stop_on"], list):
             parts.append("stop=" + ",".join(args["stop_on"]))
         return " ".join(parts)
-
     if a == "choose":
         return f"choose {args.get('choice', '')}".strip()
     if a == "surface":
@@ -69,15 +34,35 @@ def build_cmd(action, args):
         return f"open {args.get('chest_uid', '')}"
     if a == "look":
         return f"look {args.get('id', '')}"
-    # status / shop / inventory / encyclopedia / help
     return a
 
 
-async def main():
-    async with stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream, server.create_initialization_options())
+@mcp.tool()
+def play_fishing(
+    action: str,
+    choice: int = None,
+    bait_id: str = None,
+    times: int = None,
+    stop_on: list = None,
+    qty: int = None,
+    target: str = None,
+    location_id: str = None,
+    chest_uid: str = None,
+    id: str = None,
+    steps: list = None,
+) -> str:
+    """文字钓鱼游戏。action: status/shop/buy/cast/dive/choose/surface/goto/inventory/sell/open/encyclopedia/look/batch"""
+    if action == "batch" and steps:
+        parts = []
+        for step in steps:
+            parts.append(build_cmd(step.get("action", ""), step))
+        return engine.cmd("; ".join(parts))
+    return engine.cmd(build_cmd(action, {
+        "choice": choice, "bait_id": bait_id, "times": times,
+        "stop_on": stop_on, "qty": qty, "target": target,
+        "location_id": location_id, "chest_uid": chest_uid, "id": id,
+    }))
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    mcp.run(transport="stdio")
