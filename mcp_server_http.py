@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import engine
 
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse
 from starlette.routing import Route
 import uvicorn
 from mcp.server.fastmcp import FastMCP
@@ -56,13 +56,11 @@ def play_fishing(
     steps: list[dict] | None = None,
 ) -> str:
     """文字钓鱼游戏。action: status/shop/buy/cast/dive/choose/surface/goto/inventory/sell/open/encyclopedia/look/batch"""
-
     if action == "batch" and steps:
         parts = []
         for step in steps:
             parts.append(build_cmd(step.get("action", ""), step))
         return engine.cmd("; ".join(parts))
-
     return engine.cmd(build_cmd(action, {
         "choice": choice, "bait_id": bait_id, "times": times,
         "stop_on": stop_on, "qty": qty, "target": target,
@@ -70,21 +68,17 @@ def play_fishing(
     }))
 
 
-# 健康检查
 async def health(request):
     return JSONResponse({"status": "ok", "game": "ai-fishing-game"})
 
 
-# 组合 Starlette: MCP SSE + 健康检查
+from starlette.routing import Mount
+
 mcp_app = mcp.sse_app()
-
-async def sse_handler(request):
-    return await mcp_app(request.scope, request.receive, request._send)
-
 
 app = Starlette(routes=[
     Route("/health", health, methods=["GET"]),
-    Route("/sse", sse_handler, methods=["GET", "POST"]),
+    Mount("/", app=mcp_app),
 ])
 
 
