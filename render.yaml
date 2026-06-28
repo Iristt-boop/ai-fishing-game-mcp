@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ai-fishing-game
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python mcp_server_http.py
+    healthCheckPath: /sse
+    envVars:
+      - key: PYTHONUTF8
+        value: "1"
+    disk:
+      name: fishing-data
+      mountPath: /data
+      sizeGB: 1
