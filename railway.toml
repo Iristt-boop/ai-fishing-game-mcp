@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python mcp_server_http.py"
+healthcheckPath = "/health"
+restartPolicyMaxRetries = 3
+
+[service]
+port = 3002
+
+[env]
+PYTHONUTF8 = "1"
